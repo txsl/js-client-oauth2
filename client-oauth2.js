@@ -363,9 +363,17 @@ ClientOAuth2Token.prototype.request = function (opts) {
  *
  * @return {Promise}
  */
-ClientOAuth2Token.prototype.refresh = function () {
+ClientOAuth2Token.prototype.refresh = function (options) {
   var self = this
-  var options = this.client.options
+  options = extend(this.client.options, options)
+
+  if (typeof options.body === 'undefined') {
+    options.body = {}
+  }
+
+  if (options.body.hasOwnProperty('scopes')) {
+    options.body.scope = sanitizeScope(options.body.scopes)
+  }
 
   if (!this.refreshToken) {
     return Promise.reject(new Error('No refresh token set'))
@@ -377,10 +385,10 @@ ClientOAuth2Token.prototype.refresh = function () {
     headers: extend(DEFAULT_HEADERS, {
       Authorization: auth(options.clientId, options.clientSecret)
     }),
-    body: {
+    body: extend(options.body, {
       refresh_token: this.refreshToken,
       grant_type: 'refresh_token'
-    }
+    })
   })
     .then(handleAuthResponse)
     .then(function (data) {
